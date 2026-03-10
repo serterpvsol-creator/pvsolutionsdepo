@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Depo Stok Takip</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --primary: #2563eb;
+    --primary-light: #dbeafe;
+    --green: #16a34a;
+    --green-light: #dcfce7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --orange: #ea580c;
+    --orange-light: #ffedd5;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: var(--primary); color: white; padding: 18px 24px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+  }
+  header .logo { font-size: 28px; }
+  header h1 { font-size: 20px; font-weight: 800; }
+  header span { font-size: 13px; opacity: 0.8; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .sync-badge {
+    background: rgba(255,255,255,0.2); border-radius: 20px;
+    padding: 4px 12px; font-size: 12px; font-weight: 700;
+  }
+  .sync-badge.ok { background: rgba(22,163,74,0.4); }
+  .sync-badge.err { background: rgba(220,38,38,0.4); }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
+
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .sum-card { background: var(--card); border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; }
+  .sum-icon { font-size: 32px; }
+  .sum-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sum-value { font-size: 26px; font-weight: 800; }
+  .sum-card.green .sum-value { color: var(--green); }
+  .sum-card.red .sum-value { color: var(--red); }
+  .sum-card.blue .sum-value { color: var(--primary); }
+
+  .panel { background: var(--card); border-radius: 14px; padding: 22px; box-shadow: var(--shadow); margin-bottom: 24px; }
+  .panel h2 { font-size: 16px; font-weight: 800; margin-bottom: 16px; }
+
+  .form-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+  .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px;
+    font-family: 'Nunito', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); background: white; }
+
+  .btn { padding: 10px 20px; border: none; border-radius: 8px; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+  .hareket-form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end; }
+
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; }
+  .search-box { flex: 1; padding: 9px 14px; border: 2px solid var(--border); border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 14px; background: white; }
+  .search-box:focus { outline: none; border-color: var(--primary); }
+  .filter-select { padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 14px; background: white; cursor: pointer; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th { text-align: left; padding: 10px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); font-weight: 700; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 12px 14px; font-size: 14px; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-orange { background: var(--orange-light); color: var(--orange); }
+
+  .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+  .qty-btn { width: 28px; height: 28px; border: 2px solid var(--border); border-radius: 6px; background: white; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; color: var(--text); }
+  .qty-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  .delete-btn { background: none; border: none; cursor: pointer; font-size: 18px; opacity: 0.4; transition: opacity 0.15s; }
+  .delete-btn:hover { opacity: 1; }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+
+  .uyari { background: var(--orange-light); border: 2px solid #fdba74; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--orange); font-weight: 700; margin-bottom: 14px; display: none; }
+  .uyari.show { display: block; }
+
+  .loading { text-align: center; padding: 30px; color: var(--muted); font-size: 15px; }
+
+  @media (max-width: 700px) {
+    .summary { grid-template-columns: 1fr; }
+    .form-row, .hareket-form { grid-template-columns: 1fr 1fr; }
+    .form-row > *:first-child, .hareket-form > *:first-child { grid-column: 1 / -1; }
+    .form-row > *:last-child, .hareket-form > *:last-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">📦</span>
+  <div>
+    <h1>Depo Stok Takip</h1>
+    <span>Kolay & Hızlı Stok Yönetimi</span>
+  </div>
+  <div class="header-right">
+    <span class="sync-badge" id="syncBadge">⏳ Bağlanıyor...</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="summary">
+    <div class="sum-card blue"><span class="sum-icon">🗂️</span><div><div class="sum-label">Toplam Ürün</div><div class="sum-value" id="toplamUrun">0</div></div></div>
+    <div class="sum-card green"><span class="sum-icon">✅</span><div><div class="sum-label">Stokta Var</div><div class="sum-value" id="stokVar">0</div></div></div>
+    <div class="sum-card red"><span class="sum-icon">⚠️</span><div><div class="sum-label">Kritik / Tükendi</div><div class="sum-value" id="kritik">0</div></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>➕ Yeni Ürün Ekle</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Ürün Adı</label><input type="text" id="urunAdi" placeholder="örn: A4 Kağıt" /></div>
+      <div class="form-group"><label>Kategori</label>
+        <select id="kategori">
+          <option>Genel</option><option>Kırtasiye</option><option>Elektronik</option>
+          <option>Temizlik</option><option>Gıda</option><option>Diğer</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Başlangıç Miktarı</label><input type="number" id="miktar" placeholder="0" min="0" /></div>
+      <div class="form-group"><label>Kritik Eşik</label><input type="number" id="esik" placeholder="5" min="0" /></div>
+      <button class="btn btn-primary" onclick="urunEkle()">Ekle</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>🔄 Stok Hareketi (Giriş / Çıkış)</h2>
+    <div class="hareket-form">
+      <div class="form-group"><label>Ürün Seç</label><select id="hareketUrun"></select></div>
+      <div class="form-group"><label>Miktar</label><input type="number" id="hareketMiktar" placeholder="1" min="1" value="1" /></div>
+      <div class="form-group"><label>İşlem</label>
+        <select id="hareketTip">
+          <option value="giris">📥 Giriş (Stok Geldi)</option>
+          <option value="cikis">📤 Çıkış (Stok Gitti)</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="hareketEkle()">Uygula</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📋 Stok Listesi</h2>
+    <div class="toolbar">
+      <input class="search-box" type="text" id="aramaInput" placeholder="🔍 Ürün ara..." oninput="listeyiGuncelle()" />
+      <select class="filter-select" id="filtreKategori" onchange="listeyiGuncelle()">
+        <option value="">Tüm Kategoriler</option>
+        <option>Genel</option><option>Kırtasiye</option><option>Elektronik</option>
+        <option>Temizlik</option><option>Gıda</option><option>Diğer</option>
+      </select>
+      <select class="filter-select" id="filtreStok" onchange="listeyiGuncelle()">
+        <option value="">Tüm Durum</option>
+        <option value="var">Stokta Var</option>
+        <option value="kritik">Kritik</option>
+        <option value="tukendi">Tükendi</option>
+      </select>
+    </div>
+    <div class="uyari" id="uyari">⚠️ Kritik seviyede veya tükenmiş ürünler var!</div>
+    <div class="table-wrap">
+      <div class="loading" id="loadingDiv">⏳ Veriler yükleniyor...</div>
+      <table id="mainTable" style="display:none">
+        <thead><tr>
+          <th>Ürün Adı</th><th>Kategori</th><th>Miktar</th>
+          <th>Kritik Eşik</th><th>Durum</th><th>Hızlı Güncelle</th><th></th>
+        </tr></thead>
+        <tbody id="tabloBody"></tbody>
+      </table>
+      <div class="empty-state" id="bosState" style="display:none">
+        <div class="emoji">📭</div><p>Henüz ürün eklenmedi.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let urunler = [];
+
+  async function sunucudanYukle() {
+    try {
+      const res = await fetch('/api/urunler');
+      urunler = await res.json();
+      setSyncOk();
+      listeyiGuncelle();
+      hareketSelectGuncelle();
+      document.getElementById('loadingDiv').style.display = 'none';
+      document.getElementById('mainTable').style.display = 'table';
+    } catch(e) {
+      setSyncErr();
+      document.getElementById('loadingDiv').textContent = '❌ Sunucuya bağlanılamadı.';
+    }
+  }
+
+  async function sunucuyaKaydet() {
+    try {
+      await fetch('/api/urunler', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(urunler)
+      });
+      setSyncOk();
+    } catch(e) { setSyncErr(); }
+  }
+
+  function setSyncOk() {
+    const b = document.getElementById('syncBadge');
+    b.textContent = '🟢 Bağlı';
+    b.className = 'sync-badge ok';
+  }
+  function setSyncErr() {
+    const b = document.getElementById('syncBadge');
+    b.textContent = '🔴 Bağlantı Yok';
+    b.className = 'sync-badge err';
+  }
+
+  async function urunEkle() {
+    const ad = document.getElementById('urunAdi').value.trim();
+    if (!ad) { alert('Lütfen ürün adı girin!'); return; }
+    urunler.push({
+      id: Date.now(),
+      ad,
+      kategori: document.getElementById('kategori').value,
+      miktar: parseInt(document.getElementById('miktar').value) || 0,
+      esik: parseInt(document.getElementById('esik').value) || 5
+    });
+    await sunucuyaKaydet();
+    document.getElementById('urunAdi').value = '';
+    document.getElementById('miktar').value = '';
+    document.getElementById('esik').value = '';
+    listeyiGuncelle();
+    hareketSelectGuncelle();
+  }
+
+  async function urunSil(id) {
+    if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+    urunler = urunler.filter(u => u.id !== id);
+    await sunucuyaKaydet();
+    listeyiGuncelle();
+    hareketSelectGuncelle();
+  }
+
+  async function miktarDegistir(id, fark) {
+    const u = urunler.find(u => u.id === id);
+    if (!u) return;
+    u.miktar = Math.max(0, u.miktar + fark);
+    await sunucuyaKaydet();
+    listeyiGuncelle();
+  }
+
+  async function hareketEkle() {
+    const id = parseInt(document.getElementById('hareketUrun').value);
+    const mik = parseInt(document.getElementById('hareketMiktar').value) || 0;
+    const tip = document.getElementById('hareketTip').value;
+    if (!id) { alert('Lütfen bir ürün seçin!'); return; }
+    if (mik <= 0) { alert('Geçerli bir miktar girin!'); return; }
+    const u = urunler.find(u => u.id === id);
+    if (!u) return;
+    if (tip === 'cikis' && u.miktar < mik) { alert('Stokta yeterli ürün yok! Mevcut: ' + u.miktar); return; }
+    u.miktar = tip === 'giris' ? u.miktar + mik : u.miktar - mik;
+    await sunucuyaKaydet();
+    listeyiGuncelle();
+    document.getElementById('hareketMiktar').value = '1';
+  }
+
+  function hareketSelectGuncelle() {
+    const sel = document.getElementById('hareketUrun');
+    sel.innerHTML = urunler.length === 0
+      ? '<option value="">-- Önce ürün ekleyin --</option>'
+      : urunler.map(u => `<option value="${u.id}">${u.ad}</option>`).join('');
+  }
+
+  function durum(u) {
+    if (u.miktar === 0) return { label: 'Tükendi', cls: 'badge-red', key: 'tukendi' };
+    if (u.miktar <= u.esik) return { label: 'Kritik', cls: 'badge-orange', key: 'kritik' };
+    return { label: 'Yeterli', cls: 'badge-green', key: 'var' };
+  }
+
+  function listeyiGuncelle() {
+    const ara = document.getElementById('aramaInput').value.toLowerCase();
+    const katFiltre = document.getElementById('filtreKategori').value;
+    const stokFiltre = document.getElementById('filtreStok').value;
+
+    let filtreli = urunler.filter(u => {
+      const d = durum(u);
+      return (!ara || u.ad.toLowerCase().includes(ara))
+        && (!katFiltre || u.kategori === katFiltre)
+        && (!stokFiltre || d.key === stokFiltre);
+    });
+
+    const tbody = document.getElementById('tabloBody');
+    const bosState = document.getElementById('bosState');
+    const mainTable = document.getElementById('mainTable');
+
+    mainTable.style.display = 'table';
+    document.getElementById('loadingDiv').style.display = 'none';
+
+    if (filtreli.length === 0) {
+      tbody.innerHTML = '';
+      bosState.style.display = 'block';
+    } else {
+      bosState.style.display = 'none';
+      tbody.innerHTML = filtreli.map(u => {
+        const d = durum(u);
+        return `<tr>
+          <td><strong>${u.ad}</strong></td>
+          <td><span style="color:var(--muted)">${u.kategori}</span></td>
+          <td><strong style="font-size:16px">${u.miktar}</strong></td>
+          <td>${u.esik}</td>
+          <td><span class="badge ${d.cls}">${d.label}</span></td>
+          <td><div class="qty-ctrl">
+            <button class="qty-btn" onclick="miktarDegistir(${u.id}, -1)">−</button>
+            <button class="qty-btn" onclick="miktarDegistir(${u.id}, 1)">+</button>
+          </div></td>
+          <td><button class="delete-btn" onclick="urunSil(${u.id})">🗑️</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('toplamUrun').textContent = urunler.length;
+    document.getElementById('stokVar').textContent = urunler.filter(u => durum(u).key === 'var').length;
+    document.getElementById('kritik').textContent = urunler.filter(u => ['kritik','tukendi'].includes(durum(u).key)).length;
+    const kritikVar = urunler.some(u => ['kritik','tukendi'].includes(durum(u).key));
+    document.getElementById('uyari').classList.toggle('show', kritikVar);
+  }
+
+  // Her 10 saniyede otomatik yenile (başka birinin değişikliğini yakala)
+  sunucudanYukle();
+  setInterval(sunucudanYukle, 10000);
+</script>
+</body>
+</html>
